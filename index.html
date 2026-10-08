@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Juan Pablo Ostoich · CV</title>
+<meta name="description" content="Juan Pablo Ostoich — Arquitecto, Paisajista y Urbanista. Currículum, portfolio y certificados.">
+<style>
+  html, body { margin: 0; height: 100%; background: #525659; }
+  #pdf { display: block; width: 100%; height: 100%; border: 0; }
+  #pages { display: none; flex-direction: column; padding: 8px 0; }
+  .pg { position: relative; margin: 0 auto 8px; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
+  .pg canvas { display: block; width: 100%; height: auto; }
+  .pg a { position: absolute; }
+  noscript a { color: #fff; font: 16px sans-serif; display: block; padding: 24px; }
+</style>
+</head>
+<body>
+<iframe id="pdf" title="Currículum de Juan Pablo Ostoich"></iframe>
+<div id="pages"></div>
+<noscript><a href="cv.pdf">Abrir el CV (PDF)</a></noscript>
+<script>
+  var PDF = 'cv.pdf';
+  if (navigator.pdfViewerEnabled !== false) {
+    document.getElementById('pdf').src = PDF + '#view=FitH';
+  } else {
+    // Navegadores sin visor de PDF (p. ej. Chrome en Android): dibujar con PDF.js.
+    document.getElementById('pdf').style.display = 'none';
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = render;
+    s.onerror = function () { location.href = PDF; };
+    document.head.appendChild(s);
+  }
+
+  function render() {
+    var lib = window.pdfjsLib;
+    lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var box = document.getElementById('pages');
+    box.style.display = 'flex';
+    lib.getDocument(PDF).promise.then(function (doc) {
+      for (var n = 1; n <= doc.numPages; n++) doc.getPage(n).then(drawPage);
+    }).catch(function () { location.href = PDF; });
+
+    function drawPage(page) {
+      var cssW = Math.min(document.documentElement.clientWidth - 16, 900);
+      var base = page.getViewport({ scale: 1 });
+      var vp = page.getViewport({ scale: cssW / base.width });
+      var dpr = window.devicePixelRatio || 1;
+      var wrap = document.createElement('div');
+      wrap.className = 'pg';
+      wrap.style.width = vp.width + 'px';
+      wrap.style.order = page.pageNumber;
+      var c = document.createElement('canvas');
+      c.width = Math.floor(vp.width * dpr);
+      c.height = Math.floor(vp.height * dpr);
+      wrap.appendChild(c);
+      box.appendChild(wrap);
+      page.render({ canvasContext: c.getContext('2d'), viewport: vp, transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null });
+      page.getAnnotations().then(function (anns) {
+        anns.forEach(function (a) {
+          if (a.subtype !== 'Link' || !a.url) return;
+          var r = vp.convertToViewportRectangle(a.rect);
+          var link = document.createElement('a');
+          link.href = a.url;
+          var pad = 10; // zona táctil más grande que el texto del link
+          link.style.left = (Math.min(r[0], r[2]) - pad) + 'px';
+          link.style.top = (Math.min(r[1], r[3]) - pad) + 'px';
+          link.style.width = (Math.abs(r[2] - r[0]) + 2 * pad) + 'px';
+          link.style.height = (Math.abs(r[3] - r[1]) + 2 * pad) + 'px';
+          wrap.appendChild(link);
+        });
+      });
+    }
+  }
+</script>
+</body>
+</html>
